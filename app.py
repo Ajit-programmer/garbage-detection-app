@@ -11,23 +11,35 @@ import base64
 from io import BytesIO
 from PIL import Image
 import json
+from dotenv import load_dotenv  # Add this import
+
+# Load environment variables from .env file
+load_dotenv()
 
 app = Flask(__name__)
 mysql = MySQL(app)
 
-# Configuration
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'Ajit@1234'
-app.config['MYSQL_DB'] = 'garbage_detection'
-app.config['UPLOAD_FOLDER'] = 'uploads'
+# Configuration - Read from .env file (SECURE!)
+app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST', 'localhost')
+app.config['MYSQL_USER'] = os.getenv('MYSQL_USER', 'root')
+app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD', '')
+app.config['MYSQL_DB'] = os.getenv('MYSQL_DB', 'garbage_detection')
+app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+
+# Load YOLO model path from .env
+MODEL_PATH = os.getenv('MODEL_PATH', 'best.pt')
 
 # Create upload folder if it doesn't exist
 os.makedirs(app.config['UPLOAD_FOLDER'], exist_ok=True)
 
 # Load YOLO model
-model = YOLO('best.pt')  # Use your trained model path
+try:
+    model = YOLO(MODEL_PATH)
+    print(f"✅ Model loaded from: {MODEL_PATH}")
+except Exception as e:
+    print(f"❌ Error loading model: {e}")
+    model = None
 
 # Create MySQL table (moved inside app context)
 def create_table():
@@ -54,6 +66,9 @@ def create_table():
 
 def detect_garbage(image_path):
     """Detect garbage in image using YOLO"""
+    if model is None:
+        return []
+    
     img = cv2.imread(image_path)
     if img is None:
         return []
@@ -216,4 +231,6 @@ if __name__ == '__main__':
     # Create table when app starts
     create_table()
     print("🚀 Starting Flask app...")
+    print(f"📁 Upload folder: {app.config['UPLOAD_FOLDER']}")
+    print(f"🗄️  Database: {app.config['MYSQL_DB']}")
     app.run(debug=True)
