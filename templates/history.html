@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Detection History - Garbage Detection System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .nav-links {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 20px;
+            font-weight: 600;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .number {
+            font-size: 2.5em;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .history-container {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+
+        .history-container h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .detection-card {
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            transition: all 0.3s;
+        }
+
+        .detection-card:hover {
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.2);
+            transform: translateY(-2px);
+        }
+
+        .detection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .detection-time {
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .detection-count {
+            background: #667eea;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            font-weight: 600;
+        }
+
+        .detection-accuracy {
+            background: #764ba2;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 20px;
+            font-size: 0.9em;
+        }
+
+        .detection-objects {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+
+        .object-item {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .object-item strong {
+            color: #667eea;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .object-item small {
+            color: #999;
+        }
+
+        .delete-btn {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.9em;
+            transition: all 0.3s;
+        }
+
+        .delete-btn:hover {
+            background: #b71c1c;
+            transform: scale(1.05);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+
+        .empty-state svg {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            opacity: 0.5;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            padding: 10px 15px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .filter-btn:hover {
+            border-color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .detection-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .detection-objects {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>📊 Detection History</h1>
+            <p>View all garbage detection records</p>
+        </header>
+
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/history">Detection History</a>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <h3>Total Detections</h3>
+                <div class="number" id="totalDetections">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Average Accuracy</h3>
+                <div class="number" id="avgAccuracy">0%</div>
+            </div>
+            <div class="stat-card">
+                <h3>Items Detected</h3>
+                <div class="number" id="totalItems">0</div>
+            </div>
+            <div class="stat-card">
+                <h3>Most Common</h3>
+                <div class="number" id="mostCommon">-</div>
+            </div>
+        </div>
+
+        <div class="history-container">
+            <h2>All Detections</h2>
+            
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">All</button>
+                <button class="filter-btn" data-filter="cardboard">Cardboard</button>
+                <button class="filter-btn" data-filter="glass">Glass</button>
+                <button class="filter-btn" data-filter="metal">Metal</button>
+                <button class="filter-btn" data-filter="paper">Paper</button>
+                <button class="filter-btn" data-filter="plastic">Plastic</button>
+            </div>
+
+            <div id="detectionsList" class="loading">
+                <div class="spinner"></div>
+                <p>Loading detections...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allDetections = [];
+        let currentFilter = 'all';
+
+        async function loadDetections() {
+            try {
+                const response = await fetch('/api/history');
+                const data = await response.json();
+                allDetections = data;
+                updateStats();
+                renderDetections();
+            } catch (error) {
+                document.getElementById('detectionsList').innerHTML = 
+                    '<p style="color: #d32f2f;">Error loading detections</p>';
+            }
+        }
+
+        function updateStats() {
+            const totalDetections = allDetections.length;
+            const totalItems = allDetections.reduce((sum, d) => sum + d.detection_count, 0);
+            const avgAccuracy = totalDetections > 0 
+                ? (allDetections.reduce((sum, d) => sum + d.detection_accuracy, 0) / totalDetections * 100).toFixed(1)
+                : 0;
+
+            // Find most common item
+            const itemCounts = {};
+            allDetections.forEach(detection => {
+                detection.detected_objects.forEach(obj => {
+                    itemCounts[obj.class] = (itemCounts[obj.class] || 0) + 1;
+                });
+            });
+            const mostCommon = Object.keys(itemCounts).length > 0 
+                ? Object.entries(itemCounts).sort((a, b) => b[1] - a[1])[0][0]
+                : '-';
+
+            document.getElementById('totalDetections').textContent = totalDetections;
+            document.getElementById('avgAccuracy').textContent = avgAccuracy + '%';
+            document.getElementById('totalItems').textContent = totalItems;
+            document.getElementById('mostCommon').textContent = mostCommon.charAt(0).toUpperCase() + mostCommon.slice(1);
+        }
+
+        function renderDetections() {
+            const filtered = currentFilter === 'all' 
+                ? allDetections 
+                : allDetections.filter(d => d.detected_objects.some(obj => obj.class === currentFilter));
+
+            if (filtered.length === 0) {
+                document.getElementById('detectionsList').innerHTML = 
+                    '<div class="empty-state"><p>No detections found</p></div>';
+                return;
+            }
+
+            document.getElementById('detectionsList').innerHTML = filtered.map(detection => `
+                <div class="detection-card">
+                    <div class="detection-header">
+                        <div>
+                            <strong>${detection.image_path.split('/').pop()}</strong>
+                            <div class="detection-time">${new Date(detection.detection_time).toLocaleString()}</div>
+                        </div>
+                        <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
+                            <span class="detection-count">${detection.detection_count} items</span>
+                            <span class="detection-accuracy">${(detection.detection_accuracy * 100).toFixed(1)}% avg</span>
+                            <form action="/delete/${detection.id}" method="POST" style="display: inline;" 
+                                  onsubmit="return confirm('Delete this detection?');">
+                                <button type="submit" class="delete-btn">Delete</button>
+                            </form>
+                        </div>
+                    </div>
+                    <div class="detection-objects">
+                        ${detection.detected_objects.map(obj => `
+                            <div class="object-item">
+                                <strong>${obj.class}</strong>
+                                <small>Confidence: ${(obj.confidence * 100).toFixed(1)}%</small>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter buttons
+        document.querySelectorAll('.filter-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentFilter = btn.dataset.filter;
+                renderDetections();
+            });
+        });
+
+        // Load detections on page load
+        loadDetections();
+    </script>
+</body>
+</html>

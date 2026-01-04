@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Garbage Detection System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .nav-links {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            margin: 0 20px;
+            font-weight: 600;
+            transition: opacity 0.3s;
+        }
+
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.8em;
+        }
+
+        .card p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .upload-area {
+            border: 3px dashed #667eea;
+            border-radius: 10px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            background: #f9f9f9;
+        }
+
+        .upload-area:hover {
+            background: #f0f0f0;
+            border-color: #764ba2;
+        }
+
+        .upload-area.dragover {
+            background: #e8e8ff;
+            border-color: #764ba2;
+        }
+
+        .upload-area svg {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 15px;
+            color: #667eea;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            margin-top: 20px;
+            font-weight: 600;
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        video {
+            width: 100%;
+            border-radius: 10px;
+            background: #000;
+            margin-bottom: 20px;
+        }
+
+        .camera-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .camera-controls button {
+            flex: 1;
+        }
+
+        .results {
+            background: #f9f9f9;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .results h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+        }
+
+        .detection-item {
+            background: white;
+            padding: 10px 15px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .detection-item strong {
+            color: #667eea;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .message.error {
+            background: #ffe6e6;
+            color: #d32f2f;
+            border-left: 4px solid #d32f2f;
+        }
+
+        .message.success {
+            background: #e6ffe6;
+            color: #388e3c;
+            border-left: 4px solid #388e3c;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+
+            header h1 {
+                font-size: 1.8em;
+            }
+
+            .nav-links a {
+                margin: 0 10px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🗑️ Garbage Detection System</h1>
+            <p>Detect and classify waste materials using AI</p>
+        </header>
+
+        <div class="nav-links">
+            <a href="/">Home</a>
+            <a href="/history">Detection History</a>
+        </div>
+
+        <div class="main-content">
+            <!-- Upload Section -->
+            <div class="card">
+                <h2>📤 Upload Photo</h2>
+                <p>Upload an image to detect garbage items</p>
+                
+                <div class="message" id="uploadMessage"></div>
+                
+                <div class="upload-area" id="uploadArea">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                        <polyline points="17 8 12 3 7 8"></polyline>
+                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                    </svg>
+                    <p>Click to upload or drag and drop</p>
+                    <small>JPG, PNG (Max 16MB)</small>
+                </div>
+                <input type="file" id="fileInput" accept="image/*">
+                
+                <div class="loading" id="uploadLoading">
+                    <div class="spinner"></div>
+                    <p>Processing image...</p>
+                </div>
+                
+                <div class="results" id="uploadResults">
+                    <h3>Detection Results:</h3>
+                    <div id="uploadDetections"></div>
+                </div>
+            </div>
+
+            <!-- Camera Section -->
+            <div class="card">
+                <h2>📷 Live Camera Detection</h2>
+                <p>Use your camera to detect garbage in real-time</p>
+                
+                <div class="message" id="cameraMessage"></div>
+                
+                <video id="videoElement" playsinline></video>
+                
+                <div class="camera-controls">
+                    <button class="btn" id="startCameraBtn">Start Camera</button>
+                    <button class="btn" id="stopCameraBtn" style="display: none;">Stop Camera</button>
+                </div>
+                
+                <button class="btn" id="captureBtn" style="display: none;">Capture & Detect</button>
+                
+                <div class="loading" id="cameraLoading">
+                    <div class="spinner"></div>
+                    <p>Processing image...</p>
+                </div>
+                
+                <div class="results" id="cameraResults">
+                    <h3>Detection Results:</h3>
+                    <div id="cameraDetections"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Upload functionality
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadMessage = document.getElementById('uploadMessage');
+        const uploadLoading = document.getElementById('uploadLoading');
+        const uploadResults = document.getElementById('uploadResults');
+        const uploadDetections = document.getElementById('uploadDetections');
+
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            handleFileUpload(e.dataTransfer.files[0]);
+        });
+
+        fileInput.addEventListener('change', (e) => {
+            handleFileUpload(e.target.files[0]);
+        });
+
+        function handleFileUpload(file) {
+            if (!file) return;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            uploadLoading.style.display = 'block';
+            uploadResults.style.display = 'none';
+            uploadMessage.style.display = 'none';
+
+            fetch('/detect', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                uploadLoading.style.display = 'none';
+                if (data.success) {
+                    displayDetections(data.detections, uploadDetections);
+                    uploadResults.style.display = 'block';
+                    showMessage('File uploaded and processed successfully!', 'success', uploadMessage);
+                } else {
+                    showMessage('Error: ' + data.error, 'error', uploadMessage);
+                }
+            })
+            .catch(error => {
+                uploadLoading.style.display = 'none';
+                showMessage('Error: ' + error, 'error', uploadMessage);
+            });
+        }
+
+        // Camera functionality
+        const videoElement = document.getElementById('videoElement');
+        const startCameraBtn = document.getElementById('startCameraBtn');
+        const stopCameraBtn = document.getElementById('stopCameraBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const cameraMessage = document.getElementById('cameraMessage');
+        const cameraLoading = document.getElementById('cameraLoading');
+        const cameraResults = document.getElementById('cameraResults');
+        const cameraDetections = document.getElementById('cameraDetections');
+        let stream = null;
+
+        startCameraBtn.addEventListener('click', () => {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+            .then(mediaStream => {
+                stream = mediaStream;
+                videoElement.srcObject = stream;
+                videoElement.style.display = 'block';
+                startCameraBtn.style.display = 'none';
+                stopCameraBtn.style.display = 'block';
+                captureBtn.style.display = 'block';
+            })
+            .catch(error => {
+                showMessage('Camera access denied', 'error', cameraMessage);
+            });
+        });
+
+        stopCameraBtn.addEventListener('click', () => {
+            stream.getTracks().forEach(track => track.stop());
+            videoElement.style.display = 'none';
+            startCameraBtn.style.display = 'block';
+            stopCameraBtn.style.display = 'none';
+            captureBtn.style.display = 'none';
+        });
+
+        captureBtn.addEventListener('click', () => {
+            const canvas = document.createElement('canvas');
+            canvas.width = videoElement.videoWidth;
+            canvas.height = videoElement.videoHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(videoElement, 0, 0);
+
+            const imageData = canvas.toDataURL('image/jpeg');
+
+            cameraLoading.style.display = 'block';
+            cameraResults.style.display = 'none';
+
+            fetch('/camera-detect', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ image: imageData })
+            })
+            .then(response => response.json())
+            .then(data => {
+                cameraLoading.style.display = 'none';
+                if (data.success) {
+                    displayDetections(data.detections, cameraDetections);
+                    cameraResults.style.display = 'block';
+                    showMessage('Detection complete!', 'success', cameraMessage);
+                } else {
+                    showMessage('Error: ' + data.error, 'error', cameraMessage);
+                }
+            })
+            .catch(error => {
+                cameraLoading.style.display = 'none';
+                showMessage('Error: ' + error, 'error', cameraMessage);
+            });
+        });
+
+        function displayDetections(detections, container) {
+            if (detections.length === 0) {
+                container.innerHTML = '<p style="color: #666;">No garbage detected</p>';
+                return;
+            }
+
+            container.innerHTML = detections.map(d => 
+                `<div class="detection-item">
+                    <strong>${d.class}</strong> - Confidence: ${(d.confidence * 100).toFixed(1)}%
+                </div>`
+            ).join('');
+        }
+
+        function showMessage(text, type, element) {
+            element.textContent = text;
+            element.className = `message ${type}`;
+            element.style.display = 'block';
+        }
+    </script>
+</body>
+</html>

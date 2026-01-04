@@ -1,0 +1,6 @@
+Flask==2.3.0
+flask-mysqldb==1.0.1
+opencv-python==4.8.0.74
+ultralytics==8.0.0
+Pillow==10.0.0
+Werkzeug==2.3.0
