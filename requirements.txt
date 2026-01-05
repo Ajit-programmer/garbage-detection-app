@@ -1,6 +1,7 @@
-# Web Framework
+# Web Framework & Server
 Flask==2.3.7
 Werkzeug==2.3.7
+gunicorn==21.2.0
 
 # Database
 flask-mysqldb==1.0.1
