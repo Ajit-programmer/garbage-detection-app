@@ -11,7 +11,7 @@ import base64
 from io import BytesIO
 from PIL import Image
 import json
-from dotenv import load_dotenv  # Add this import
+from dotenv import load_dotenv
 
 # Load environment variables from .env file
 load_dotenv()
@@ -24,8 +24,17 @@ app.config['MYSQL_HOST'] = os.getenv('MYSQL_HOST', 'localhost')
 app.config['MYSQL_USER'] = os.getenv('MYSQL_USER', 'root')
 app.config['MYSQL_PASSWORD'] = os.getenv('MYSQL_PASSWORD', '')
 app.config['MYSQL_DB'] = os.getenv('MYSQL_DB', 'garbage_detection')
+app.config['MYSQL_PORT'] = int(os.getenv('MYSQL_PORT', 3306))
 app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER', 'uploads')
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
+
+# SSL/TLS support for Railway public network
+app.config['MYSQL_CURSORCLASS'] = 'DictCursor'
+app.config['MYSQL_AUTOCOMMIT'] = True
+
+# For Railway public network (port 21269), add SSL option
+if int(os.getenv('MYSQL_PORT', 3306)) == 21269:
+    app.config['MYSQL_SSL'] = {'ssl': True}
 
 # Load YOLO model path from .env
 MODEL_PATH = os.getenv('MODEL_PATH', 'best.pt')
@@ -233,4 +242,5 @@ if __name__ == '__main__':
     print("🚀 Starting Flask app...")
     print(f"📁 Upload folder: {app.config['UPLOAD_FOLDER']}")
     print(f"🗄️  Database: {app.config['MYSQL_DB']}")
+    print(f"🌐 Host: {app.config['MYSQL_HOST']}:{app.config['MYSQL_PORT']}")
     app.run(debug=True)
