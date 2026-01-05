@@ -1,8 +1,22 @@
-Flask==2.3.0
+# Web Framework
+Flask==2.3.7
+Werkzeug==2.3.7
+
+# Database
 flask-mysqldb==1.0.1
 PyMySQL==1.1.0
-opencv-python==4.8.0.74
-ultralytics==8.0.0
+mysqlclient==2.2.0
+
+# Machine Learning & Computer Vision
+ultralytics==8.0.235
+opencv-python==4.8.1.78
+numpy==1.24.3
+
+# Image Processing
 Pillow==10.0.0
-Werkzeug==2.3.0
+
+# Environment Variables
 python-dotenv==1.0.0
+
+# Utilities
+requests==2.31.0
