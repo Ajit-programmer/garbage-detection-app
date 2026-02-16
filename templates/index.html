@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Waste Detection System | Home</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>🗑️ YOLO Waste Detection System</h1>
+            <p class="subtitle">AI-Powered Waste Classification & Detection</p>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <!-- Hero Section -->
+            <div class="hero-section">
+                <div class="hero-content">
+                    <h2>Detect and Classify Waste Automatically</h2>
+                    <p>Our system uses advanced YOLO deep learning technology to identify and classify different types of waste in real-time with high accuracy.</p>
+                    
+                    <!-- Waste Categories -->
+                    <div class="categories">
+                        <h3>Detectable Categories:</h3>
+                        <div class="category-grid">
+                            <div class="category-item">
+                                <span class="icon">♻️</span>
+                                <span>Plastic</span>
+                            </div>
+                            <div class="category-item">
+                                <span class="icon">📄</span>
+                                <span>Paper</span>
+                            </div>
+                            <div class="category-item">
+                                <span class="icon">🔩</span>
+                                <span>Metal</span>
+                            </div>
+                            <div class="category-item">
+                                <span class="icon">🍾</span>
+                                <span>Glass</span>
+                            </div>
+                            <div class="category-item">
+                                <span class="icon">🍎</span>
+                                <span>Organic</span>
+                            </div>
+                            <div class="category-item">
+                                <span class="icon">📦</span>
+                                <span>Cardboard</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Action Section -->
+            <div class="action-section">
+                <h2>Choose Detection Method</h2>
+                <div class="action-cards">
+                    <!-- Upload Card -->
+                    <div class="card">
+                        <div class="card-icon">📤</div>
+                        <h3>Upload Image</h3>
+                        <p>Upload an image from your device to detect and classify waste items with detailed analytics</p>
+                        <a href="/upload" class="btn btn-primary">Upload Image</a>
+                    </div>
+
+                    <!-- Camera Card -->
+                    <div class="card">
+                        <div class="card-icon">📷</div>
+                        <h3>Live Camera</h3>
+                        <p>Use your webcam for real-time waste detection and classification with instant results</p>
+                        <a href="/camera" class="btn btn-secondary">Open Camera</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Section -->
+            <div class="features-section">
+                <h2>Key Features</h2>
+                <div class="features-grid">
+                    <div class="feature">
+                        <h4>⚡ Real-Time Detection</h4>
+                        <p>Instant waste classification with high accuracy powered by YOLOv8</p>
+                    </div>
+                    <div class="feature">
+                        <h4>🎯 Multi-Class Support</h4>
+                        <p>Detects and classifies 6 different waste categories simultaneously</p>
+                    </div>
+                    <div class="feature">
+                        <h4>📊 Statistics Dashboard</h4>
+                        <p>View comprehensive detection statistics and category breakdowns</p>
+                    </div>
+                    <div class="feature">
+                        <h4>🌐 Web-Based</h4>
+                        <p>No installation required, works directly in your browser</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2024 Waste Detection System | Powered by YOLOv8 & Flask</p>
+        </footer>
+    </div>
+</body>
+</html>

@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Camera | Waste Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>📷 Live Camera Detection</h1>
+            <a href="/" class="back-link">← Back to Home</a>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <div class="camera-section">
+                <!-- Camera Controls -->
+                <div class="camera-controls">
+                    <button id="startBtn" class="btn btn-primary">▶️ Start Camera</button>
+                    <button id="stopBtn" class="btn btn-secondary" style="display: none;">⏹️ Stop Camera</button>
+                    <button id="captureBtn" class="btn btn-success" style="display: none;">📸 Capture & Detect</button>
+                    <label class="toggle-label">
+                        <input type="checkbox" id="liveDetectionToggle">
+                        <span>Live Detection Mode</span>
+                    </label>
+                </div>
+
+                <!-- Camera Container -->
+                <div class="camera-container">
+                    <!-- Camera Placeholder -->
+                    <div id="cameraPlaceholder" class="camera-placeholder">
+                        <div class="placeholder-content">
+                            <div class="camera-icon">📷</div>
+                            <h3>Camera Not Started</h3>
+                            <p>Click "Start Camera" to begin detection</p>
+                        </div>
+                    </div>
+
+                    <!-- Video Element -->
+                    <video id="video" autoplay playsinline style="display: none;"></video>
+                    
+                    <!-- Canvas for capturing frames -->
+                    <canvas id="canvas" style="display: none;"></canvas>
+                    
+                    <!-- Captured/Annotated Image -->
+                    <img id="capturedImage" style="display: none;">
+                </div>
+
+                <!-- Status Bar -->
+                <div id="statusBar" class="status-bar">
+                    <span id="statusText">Ready to start</span>
+                    <span id="fpsCounter">FPS: 0</span>
+                </div>
+
+                <!-- Detection Results -->
+                <div id="detectionResults" class="detection-results" style="display: none;">
+                    <h3>🎯 Detection Results</h3>
+                    
+                    <!-- Live Statistics -->
+                    <div class="live-stats">
+                        <div class="stat-item">
+                            <span class="stat-label">Items Detected:</span>
+                            <span class="stat-value" id="liveItemCount">0</span>
+                        </div>
+                        <div id="liveCategories" class="live-categories">
+                            <!-- Categories will be populated by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Detection List -->
+                    <div class="detections-list-live">
+                        <h4>📋 Detection Details</h4>
+                        <div id="detectionsListLive" class="detections-container">
+                            <!-- Detection items will be populated by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2024 Waste Detection System | Powered by YOLOv8 & Flask</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // DOM Elements
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const capturedImage = document.getElementById('capturedImage');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const captureBtn = document.getElementById('captureBtn');
+        const liveDetectionToggle = document.getElementById('liveDetectionToggle');
+        const cameraPlaceholder = document.getElementById('cameraPlaceholder');
+        const statusText = document.getElementById('statusText');
+        const fpsCounter = document.getElementById('fpsCounter');
+        const detectionResults = document.getElementById('detectionResults');
+
+        // State variables
+        let stream = null;
+        let liveDetectionInterval = null;
+        let lastFrameTime = Date.now();
+        let frameCount = 0;
+        let isProcessing = false;
+
+        // Start camera
+        startBtn.addEventListener('click', async () => {
+            try {
+                statusText.textContent = 'Requesting camera access...';
+                statusText.style.color = '#2196F3';
+
+                // Request camera access
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 },
+                        facingMode: 'environment'
+                    } 
+                });
+                
+                video.srcObject = stream;
+                video.style.display = 'block';
+                cameraPlaceholder.style.display = 'none';
+                capturedImage.style.display = 'none';
+                
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'inline-block';
+                captureBtn.style.display = 'inline-block';
+                
+                statusText.textContent = 'Camera Active';
+                statusText.style.color = '#4CAF50';
+
+                // Start FPS counter
+                startFPSCounter();
+            } catch (error) {
+                console.error('Camera error:', error);
+                alert('Error accessing camera: ' + error.message + '\n\nMake sure you have granted camera permissions.');
+                statusText.textContent = 'Camera Error';
+                statusText.style.color = '#f44336';
+            }
+        });
+
+        // Stop camera
+        stopBtn.addEventListener('click', () => {
+            stopCamera();
+        });
+
+        function stopCamera() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
+            }
+            
+            if (liveDetectionInterval) {
+                clearInterval(liveDetectionInterval);
+                liveDetectionInterval = null;
+            }
+            
+            video.style.display = 'none';
+            capturedImage.style.display = 'none';
+            cameraPlaceholder.style.display = 'flex';
+            
+            startBtn.style.display = 'inline-block';
+            stopBtn.style.display = 'none';
+            captureBtn.style.display = 'none';
+            
+            detectionResults.style.display = 'none';
+            liveDetectionToggle.checked = false;
+            
+            statusText.textContent = 'Camera Stopped';
+            statusText.style.color = '#999';
+            fpsCounter.textContent = 'FPS: 0';
+        }
+
+        // Capture and detect
+        captureBtn.addEventListener('click', () => {
+            captureAndDetect(false);
+        });
+
+        // Live detection toggle
+        liveDetectionToggle.addEventListener('change', (e) => {
+            if (e.target.checked) {
+                startLiveDetection();
+            } else {
+                stopLiveDetection();
+            }
+        });
+
+        // Start live detection
+        function startLiveDetection() {
+            if (!stream) return;
+            
+            statusText.textContent = 'Live Detection Active';
+            statusText.style.color = '#2196F3';
+            
+            // Detect every 500ms
+            liveDetectionInterval = setInterval(() => {
+                if (!isProcessing) {
+                    captureAndDetect(true);
+                }
+            }, 500);
+        }
+
+        // Stop live detection
+        function stopLiveDetection() {
+            if (liveDetectionInterval) {
+                clearInterval(liveDetectionInterval);
+                liveDetectionInterval = null;
+            }
+            
+            statusText.textContent = 'Camera Active';
+            statusText.style.color = '#4CAF50';
+            
+            // Show video again
+            video.style.display = 'block';
+            capturedImage.style.display = 'none';
+        }
+
+        // Capture frame and detect
+        async function captureAndDetect(isLive = false) {
+            if (!video.videoWidth || !video.videoHeight) {
+                console.warn('Video not ready');
+                return;
+            }
+
+            isProcessing = true;
+
+            // Set canvas size to match video
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+
+            // Draw current frame to canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+            // Convert canvas to base64
+            const imageData = canvas.toDataURL('image/jpeg', 0.8);
+
+            try {
+                const response = await fetch('/detect_frame', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        image: imageData,
+                        confidence: 0.25
+                    })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayLiveResults(data, isLive);
+                    frameCount++;
+                } else {
+                    console.error('Detection failed:', data.error);
+                    if (!isLive) {
+                        alert('Detection failed: ' + data.error);
+                    }
+                }
+            } catch (error) {
+                console.error('Detection error:', error);
+                if (!isLive) {
+                    alert('Detection error: ' + error.message);
+                }
+            } finally {
+                isProcessing = false;
+            }
+        }
+
+        // Display live detection results
+        function displayLiveResults(data, isLive = false) {
+            detectionResults.style.display = 'block';
+
+            // Update item count
+            document.getElementById('liveItemCount').textContent = data.statistics.total_items;
+
+            // Update categories
+            const liveCategories = document.getElementById('liveCategories');
+            liveCategories.innerHTML = '';
+            
+            if (Object.keys(data.statistics.categories).length > 0) {
+                for (const [category, count] of Object.entries(data.statistics.categories)) {
+                    const categoryItem = document.createElement('div');
+                    categoryItem.className = 'category-item-live';
+                    categoryItem.innerHTML = `
+                        <span class="category-name">${capitalize(category)}</span>
+                        <span class="category-count">${count}</span>
+                    `;
+                    liveCategories.appendChild(categoryItem);
+                }
+            } else {
+                liveCategories.innerHTML = '<p class="no-data">No items detected</p>';
+            }
+
+            // Update detection list
+            const detectionsList = document.getElementById('detectionsListLive');
+            detectionsList.innerHTML = '';
+            
+            if (data.detections.length > 0) {
+                data.detections.forEach((detection, index) => {
+                    const detectionItem = document.createElement('div');
+                    detectionItem.className = 'detection-item';
+                    detectionItem.innerHTML = `
+                        <span class="detection-number">#${index + 1}</span>
+                        <span class="detection-class">${capitalize(detection.class)}</span>
+                        <span class="detection-confidence">${(detection.confidence * 100).toFixed(1)}%</span>
+                    `;
+                    detectionsList.appendChild(detectionItem);
+                });
+            } else {
+                detectionsList.innerHTML = '<p class="no-data">No detections in current frame</p>';
+            }
+
+            // Show annotated image if not in live mode
+            if (!isLive) {
+                capturedImage.src = data.annotated_image;
+                capturedImage.style.display = 'block';
+                video.style.display = 'none';
+            }
+        }
+
+        // FPS counter
+        function startFPSCounter() {
+            setInterval(() => {
+                const now = Date.now();
+                const elapsed = (now - lastFrameTime) / 1000;
+                
+                if (elapsed > 0) {
+                    const fps = frameCount / elapsed;
+                    fpsCounter.textContent = `FPS: ${fps.toFixed(1)}`;
+                }
+                
+                lastFrameTime = now;
+                frameCount = 0;
+            }, 1000);
+        }
+
+        // Helper function to capitalize
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            stopCamera();
+        });
+    </script>
+</body>
+</html>

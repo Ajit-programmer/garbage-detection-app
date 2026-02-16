@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Upload Image | Waste Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1>📤 Upload Image for Detection</h1>
+            <a href="/" class="back-link">← Back to Home</a>
+        </header>
+
+        <!-- Main Content -->
+        <main>
+            <div class="upload-section">
+                <!-- Upload Container -->
+                <div class="upload-container">
+                    <!-- Drop Zone -->
+                    <div id="dropZone" class="drop-zone">
+                        <div class="upload-icon">📁</div>
+                        <h3>Drag & Drop Image Here</h3>
+                        <p>or</p>
+                        <label for="fileInput" class="btn btn-primary">Choose File</label>
+                        <input type="file" id="fileInput" accept="image/*" style="display: none;">
+                        <p class="file-info">Supported: JPG, PNG, JPEG, BMP, WEBP (Max 16MB)</p>
+                    </div>
+
+                    <!-- Preview Section -->
+                    <div id="previewSection" class="preview-section" style="display: none;">
+                        <h3>Selected Image</h3>
+                        <img id="previewImage" src="" alt="Preview">
+                        <div class="button-group">
+                            <button id="detectBtn" class="btn btn-primary">🔍 Detect Waste</button>
+                            <button id="resetBtn" class="btn btn-secondary">🔄 Choose Another</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Loading Section -->
+                <div id="loadingSection" class="loading-section" style="display: none;">
+                    <div class="loader"></div>
+                    <p>Analyzing image and detecting waste items...</p>
+                    <p class="loading-subtext">This may take a few seconds</p>
+                </div>
+
+                <!-- Results Section -->
+                <div id="resultsSection" class="results-section" style="display: none;">
+                    <h2>🎯 Detection Results</h2>
+                    
+                    <!-- Image Comparison -->
+                    <div class="results-grid">
+                        <div class="result-card">
+                            <h3>Original Image</h3>
+                            <img id="originalImage" src="" alt="Original">
+                        </div>
+                        <div class="result-card">
+                            <h3>Detected Image</h3>
+                            <img id="detectedImage" src="" alt="Detected">
+                        </div>
+                    </div>
+
+                    <!-- Statistics Section -->
+                    <div class="statistics-section">
+                        <h3>📊 Detection Statistics</h3>
+                        <div class="stats-grid">
+                            <div class="stat-card">
+                                <div class="stat-number" id="totalItems">0</div>
+                                <div class="stat-label">Total Items Detected</div>
+                            </div>
+                            <div id="categoryStats" class="category-stats">
+                                <!-- Categories will be populated by JavaScript -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detection Details Table -->
+                    <div class="detections-list">
+                        <h3>🔍 Detection Details</h3>
+                        <div class="table-container">
+                            <table id="detectionsTable">
+                                <thead>
+                                    <tr>
+                                        <th>#</th>
+                                        <th>Category</th>
+                                        <th>Confidence</th>
+                                        <th>Bounding Box (x1, y1, x2, y2)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="detectionsTableBody">
+                                    <!-- Rows will be populated by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Action Button -->
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button id="newDetectionBtn" class="btn btn-primary">📤 Detect Another Image</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer>
+            <p>&copy; 2024 Waste Detection System | Powered by YOLOv8 & Flask</p>
+        </footer>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        // DOM Elements
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewSection = document.getElementById('previewSection');
+        const previewImage = document.getElementById('previewImage');
+        const detectBtn = document.getElementById('detectBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const loadingSection = document.getElementById('loadingSection');
+        const resultsSection = document.getElementById('resultsSection');
+        const newDetectionBtn = document.getElementById('newDetectionBtn');
+
+        let selectedFile = null;
+
+        // Drag and drop handlers
+        dropZone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropZone.classList.add('drag-over');
+        });
+
+        dropZone.addEventListener('dragleave', () => {
+            dropZone.classList.remove('drag-over');
+        });
+
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('drag-over');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        });
+
+        // File input handler
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Handle file selection
+        function handleFile(file) {
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/bmp', 'image/webp'];
+            if (!validTypes.includes(file.type)) {
+                alert('Please select a valid image file (JPG, PNG, BMP, WEBP)');
+                return;
+            }
+
+            // Validate file size (16MB max)
+            if (file.size > 16 * 1024 * 1024) {
+                alert('File size should not exceed 16MB');
+                return;
+            }
+
+            selectedFile = file;
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                dropZone.style.display = 'none';
+                previewSection.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Reset to upload new image
+        resetBtn.addEventListener('click', resetUpload);
+        newDetectionBtn.addEventListener('click', resetUpload);
+
+        function resetUpload() {
+            selectedFile = null;
+            fileInput.value = '';
+            dropZone.style.display = 'flex';
+            previewSection.style.display = 'none';
+            resultsSection.style.display = 'none';
+            loadingSection.style.display = 'none';
+        }
+
+        // Detect button handler
+        detectBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('confidence', 0.25); // Default confidence threshold
+
+            // Show loading
+            previewSection.style.display = 'none';
+            loadingSection.style.display = 'block';
+            resultsSection.style.display = 'none';
+
+            try {
+                const response = await fetch('/detect', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    displayResults(data);
+                } else {
+                    alert('Error: ' + (data.error || 'Detection failed'));
+                    resetUpload();
+                }
+            } catch (error) {
+                alert('Error: ' + error.message);
+                resetUpload();
+            } finally {
+                loadingSection.style.display = 'none';
+            }
+        });
+
+        // Display detection results
+        function displayResults(data) {
+            // Show result images
+            document.getElementById('originalImage').src = data.original_image;
+            document.getElementById('detectedImage').src = data.detected_image;
+
+            // Show total items count
+            document.getElementById('totalItems').textContent = data.statistics.total_items;
+
+            // Show category breakdown
+            const categoryStats = document.getElementById('categoryStats');
+            categoryStats.innerHTML = '';
+            
+            if (Object.keys(data.statistics.categories).length > 0) {
+                for (const [category, count] of Object.entries(data.statistics.categories)) {
+                    const categoryCard = document.createElement('div');
+                    categoryCard.className = 'stat-card category-stat';
+                    categoryCard.innerHTML = `
+                        <div class="stat-number">${count}</div>
+                        <div class="stat-label">${capitalize(category)}</div>
+                    `;
+                    categoryStats.appendChild(categoryCard);
+                }
+            } else {
+                categoryStats.innerHTML = '<p class="no-data">No waste items detected</p>';
+            }
+
+            // Show detection details table
+            const tableBody = document.getElementById('detectionsTableBody');
+            tableBody.innerHTML = '';
+            
+            if (data.detections.length > 0) {
+                data.detections.forEach((detection, index) => {
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${index + 1}</td>
+                        <td><span class="category-badge ${detection.class}">${capitalize(detection.class)}</span></td>
+                        <td>${(detection.confidence * 100).toFixed(2)}%</td>
+                        <td>${detection.bbox.join(', ')}</td>
+                    `;
+                    tableBody.appendChild(row);
+                });
+            } else {
+                tableBody.innerHTML = '<tr><td colspan="4" class="no-data">No detections found</td></tr>';
+            }
+
+            // Show results section
+            resultsSection.style.display = 'block';
+        }
+
+        // Helper function to capitalize first letter
+        function capitalize(str) {
+            return str.charAt(0).toUpperCase() + str.slice(1);
+        }
+    </script>
+</body>
+</html>
